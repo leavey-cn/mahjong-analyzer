@@ -71,6 +71,9 @@ public class Player implements DeepCopy<Player> {
     public void draw() {
         hand.incrDarkAmount(1);
     }
+    public void draw(Tile tile){
+        hand.add(tile);
+    }
 
     public void play(Tile tile) {
         //手牌中打出一张

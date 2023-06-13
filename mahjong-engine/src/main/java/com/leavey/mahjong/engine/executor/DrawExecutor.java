@@ -21,6 +21,9 @@ import com.leavey.mahjong.engine.bean.ActionRequest;
 import com.leavey.mahjong.engine.bean.Game;
 import com.leavey.mahjong.engine.bean.Operation;
 
+import java.util.List;
+import java.util.Optional;
+
 /**
  * @author Leavey
  */
@@ -43,12 +46,20 @@ public class DrawExecutor implements Executor {
     @Override
     public boolean validate(Game game, ActionRequest actionRequest) {
         //当前允许摸牌
-        return validate(game, actionRequest.getPlayer());
+        if (!validate(game, actionRequest.getPlayer())) {
+            return false;
+        }
+        //要么摸暗牌，要么摸一张明牌
+        return Optional.ofNullable(actionRequest.getKeyTiles()).map(List::size).orElse(0)<=1;
     }
 
     @Override
     public Operation execute(Game game, ActionRequest actionRequest) {
-        game.draw(actionRequest.getPlayer());
+        if (actionRequest.getKeyTiles() == null || actionRequest.getKeyTiles().isEmpty()) {
+            game.draw(actionRequest.getPlayer());
+        } else {
+            game.draw(actionRequest.getPlayer(), actionRequest.getKeyTiles().get(0));
+        }
         return new Operation(actionRequest.getPlayer(), actionRequest.getAction());
     }
 }

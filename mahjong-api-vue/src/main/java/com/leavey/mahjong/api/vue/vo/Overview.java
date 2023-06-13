@@ -32,6 +32,7 @@ public class Overview {
     private List<PlayerVo> players;
     private EatGroups eatGroups;
     private Selectors selectors;
+    private Selectors drawSelectors;
     private Selectors playSelectors;
 
     public static Overview of(Game game) {
@@ -44,6 +45,7 @@ public class Overview {
         ov.players = players;
         ov.eatGroups = eatGroups(game);
         ov.selectors = Selectors.getPrevKeyTileSelectors(game);
+        ov.drawSelectors = Selectors.fullSelectors();
         ov.playSelectors = Selectors.fullSelectors();
         return ov;
     }

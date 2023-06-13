@@ -29,5 +29,6 @@ public class ActionVo {
     private Action action;
     private EatGroups eatGroups;
     private Selectors selectors;
+    private PlaySelectors drawSelectors;
     private PlaySelectors playSelectors;
 }

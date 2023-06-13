@@ -44,8 +44,7 @@ public class GangDrawExecutor implements Executor {
 
     @Override
     public Operation execute(Game game, ActionRequest actionRequest) {
-        int drawAmount = game.getRule().allowGangDrawAmount();
-        game.gangDraw(actionRequest.getPlayer(), drawAmount);
+        int drawAmount = game.gangDraw(actionRequest.getPlayer());
         Operation operation = new Operation(actionRequest.getPlayer(), actionRequest.getAction());
         operation.setDarkTileAmount(drawAmount);
         return operation;

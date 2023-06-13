@@ -167,6 +167,11 @@ public class Game implements DeepCopy<Game> {
         pileSize--;
     }
 
+    public void draw(int player, Tile tile) {
+        players[player].draw(tile);
+        pileSize--;
+    }
+
     public void play(int player, Tile tile) {
         players[player].play(tile);
     }
@@ -179,9 +184,11 @@ public class Game implements DeepCopy<Game> {
         players[player].pen(tile);
     }
 
-    public void gangDraw(int player, int amount) {
+    public int gangDraw(int player) {
+        int amount = rule.allowGangDrawAmount();
         players[player].gangDraw(amount);
         pileSize -= amount;
+        return amount;
     }
 
     public void gangPlay(int player, List<Tile> tiles) {

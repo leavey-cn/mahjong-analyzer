@@ -47,12 +47,13 @@ public class GameController {
         long gameId = actionVo.getGameId();
         int player = actionVo.getPlayer();
         if (Action.DRAW == actionVo.getAction()) {
+            List<Tile> tiles = actionVo.getDrawSelectors().toTiles();
             //摸牌，前端将摸牌与开杠摸牌组合了，这里需要判断是什么摸牌
             if (GameFactory.get(gameId).getPrevAction() == Action.GANG) {
-                GameFactory.play(gameId, new ActionRequest(player, Action.GANG_DRAW));
+                GameFactory.play(gameId, new ActionRequest(player, Action.GANG_DRAW, tiles));
                 executeGangPlayIfNecessary(gameId, player, actionVo.getPlaySelectors());
             } else {
-                GameFactory.play(gameId, new ActionRequest(player, Action.DRAW));
+                GameFactory.play(gameId, new ActionRequest(player, Action.DRAW, tiles));
                 executePlayIfNecessary(gameId, player, actionVo.getPlaySelectors());
             }
         } else if (Action.PLAY == actionVo.getAction()) {
