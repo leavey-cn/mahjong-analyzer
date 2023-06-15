@@ -16,8 +16,8 @@
 
 package com.leavey.mahjong.engine.util;
 
+import com.leavey.mahjong.common.bean.Tile;
 import com.leavey.mahjong.engine.bean.EatPosition;
-import com.leavey.mahjong.engine.bean.Tile;
 
 /**
  * @author Leavey

@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-package com.leavey.mahjong.engine.bean;
+package com.leavey.mahjong.common.bean;
 
 import java.util.Objects;
 
 /**
+ * 
  * @author Leavey
  */
 public class Tile implements Comparable<Tile> {
+    // TODO: 2023/6/16 修改为享元模式
     private final int value;
     private final Type type;
 

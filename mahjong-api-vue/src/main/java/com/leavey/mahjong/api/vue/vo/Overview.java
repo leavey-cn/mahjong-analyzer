@@ -16,6 +16,7 @@
 
 package com.leavey.mahjong.api.vue.vo;
 
+import com.leavey.mahjong.common.bean.Tile;
 import com.leavey.mahjong.engine.bean.*;
 import lombok.Data;
 

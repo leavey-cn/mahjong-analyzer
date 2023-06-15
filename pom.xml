@@ -10,6 +10,8 @@
     <modules>
         <module>mahjong-engine</module>
         <module>mahjong-api-vue</module>
+        <module>mahjong-efficiency</module>
+        <module>mahjong-common</module>
     </modules>
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
@@ -17,6 +19,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <spring.version>2.7.12</spring.version>
         <lombok.version>1.18.24</lombok.version>
+        <mahjong.version>1.0</mahjong.version>
     </properties>
     <dependencies>
         <dependency>

@@ -14,32 +14,18 @@
  * limitations under the License.
  */
 
-package com.leavey.mahjong.engine.util;
+package com.leavey.mahjong.efficiency.bean;
 
 import com.leavey.mahjong.common.bean.Tile;
-import com.leavey.mahjong.common.bean.Type;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 /**
+ * 一对将
  * @author Leavey
  */
-public class Matrix {
-
-    private static final Tile[][] matrix = new Tile[Type.values().length + 1][10];
-
-    static {
-        for (int i = 0; i < Type.values().length; i++) {
-            Type type = Type.values()[i];
-            for (int j = 1; j <= type.getMaxValue(); j++) {
-                matrix[i + 1][j] = new Tile(j, type);
-            }
-        }
-    }
-
-    public static Tile parse(String key) {
-        return parse(Integer.parseInt(key.substring(0, 1)), Integer.parseInt(key.substring(1, 2)));
-    }
-
-    public static Tile parse(int type, int value) {
-        return matrix[type][value];
-    }
+@Getter
+@RequiredArgsConstructor
+public class Leader {
+    private final Tile tile;
 }

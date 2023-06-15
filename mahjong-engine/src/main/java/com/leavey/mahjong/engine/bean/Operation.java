@@ -16,6 +16,7 @@
 
 package com.leavey.mahjong.engine.bean;
 
+import com.leavey.mahjong.common.bean.Tile;
 import lombok.Data;
 
 import java.util.List;

@@ -14,32 +14,31 @@
  * limitations under the License.
  */
 
-package com.leavey.mahjong.engine.util;
+package com.leavey.mahjong.efficiency.bean;
 
 import com.leavey.mahjong.common.bean.Tile;
-import com.leavey.mahjong.common.bean.Type;
+
+import java.util.Arrays;
+import java.util.Comparator;
 
 /**
+ * 搭子
+ *
  * @author Leavey
  */
-public class Matrix {
+public class Pair {
 
-    private static final Tile[][] matrix = new Tile[Type.values().length + 1][10];
+    private final Tile[] tiles;
 
-    static {
-        for (int i = 0; i < Type.values().length; i++) {
-            Type type = Type.values()[i];
-            for (int j = 1; j <= type.getMaxValue(); j++) {
-                matrix[i + 1][j] = new Tile(j, type);
-            }
-        }
+
+    public Pair(Tile t1, Tile t2) {
+        this.tiles = new Tile[]{t1, t2};
+        Arrays.sort(tiles, Comparator.comparingInt(Tile::getCode));
     }
 
-    public static Tile parse(String key) {
-        return parse(Integer.parseInt(key.substring(0, 1)), Integer.parseInt(key.substring(1, 2)));
-    }
 
-    public static Tile parse(int type, int value) {
-        return matrix[type][value];
+    public Pair(Tile t1, Tile t2, Tile t3) {
+        this.tiles = new Tile[]{t1, t2, t3};
+        Arrays.sort(tiles, Comparator.comparingInt(Tile::getCode));
     }
 }

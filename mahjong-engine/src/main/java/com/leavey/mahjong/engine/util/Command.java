@@ -16,6 +16,7 @@
 
 package com.leavey.mahjong.engine.util;
 
+import com.leavey.mahjong.common.bean.Tile;
 import com.leavey.mahjong.engine.bean.*;
 import com.leavey.mahjong.engine.factory.GameFactory;
 

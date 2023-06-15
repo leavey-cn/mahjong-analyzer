@@ -14,43 +14,52 @@
  * limitations under the License.
  */
 
-package com.leavey.mahjong.engine.bean;
+package com.leavey.mahjong.common.bean;
 
 /**
  * @author Leavey
  */
 public enum Type {
     //万
-    CHARACTER(9, 4, true, "万", 10), //饼
-    DOT(9, 4, true, "饼", 20), //条
-    BAMBOO(9, 4, true, "条", 30),
+    CHARACTER(9, 4, true, "万", 10, true), //饼
+    DOT(9, 4, true, "饼", 20, true), //条
+    BAMBOO(9, 4, true, "条", 30, true),
     /**
      * 风
      * <p>
      * 东南西北
      */
-    WIND(4, 4, false, "WIND", 40),
+    WIND(4, 4, false, "WIND", 40, false),
     /**
      * 中发白
      */
-    DRAGON(3, 4, false, "DRAGON", 50),
+    DRAGON(3, 4, false, "DRAGON", 50, false),
     /**
      * 春夏秋冬梅兰竹菊
      */
-    FLOWER(8, 1, false, "FLOWER", 60);
+    FLOWER(8, 1, false, "FLOWER", 60, false);
 
     private final int maxValue;
     private final int amount;
     private final boolean allowEat;
     private final String displayText;
     private final int base;
+    /**
+     * 是否允许组合中存在不一致的牌
+     * <p>
+     * 例如万/筒/条   1万2万3万 一句话
+     * <p>
+     * 中发白  只能一坎
+     */
+    private final boolean allowDiffGroup;
 
-    Type(int maxValue, int amount, boolean allowEat, String displayText, int base) {
+    Type(int maxValue, int amount, boolean allowEat, String displayText, int base, boolean allowDiffGroup) {
         this.maxValue = maxValue;
         this.amount = amount;
         this.allowEat = allowEat;
         this.displayText = displayText;
         this.base = base;
+        this.allowDiffGroup = allowDiffGroup;
     }
 
     public int getMaxValue() {
@@ -71,5 +80,13 @@ public enum Type {
 
     public int getBase() {
         return base;
+    }
+
+    public boolean isAllowDiffGroup() {
+        return allowDiffGroup;
+    }
+
+    public Tile tile(int value) {
+        return new Tile(value, this);
     }
 }

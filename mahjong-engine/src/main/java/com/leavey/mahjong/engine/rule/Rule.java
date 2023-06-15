@@ -16,9 +16,9 @@
 
 package com.leavey.mahjong.engine.rule;
 
+import com.leavey.mahjong.common.bean.Tile;
+import com.leavey.mahjong.common.bean.Type;
 import com.leavey.mahjong.engine.bean.Action;
-import com.leavey.mahjong.engine.bean.Tile;
-import com.leavey.mahjong.engine.bean.Type;
 import com.leavey.mahjong.engine.executor.Executor;
 
 import java.util.List;
