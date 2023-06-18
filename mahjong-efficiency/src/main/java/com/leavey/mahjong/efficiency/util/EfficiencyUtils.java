@@ -22,6 +22,7 @@ import com.leavey.mahjong.efficiency.bean.EfficiencyEntry;
 import com.leavey.mahjong.efficiency.bean.Group;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -36,6 +37,11 @@ import java.util.stream.Stream;
  */
 public class EfficiencyUtils {
 
+    public static void main(String[] args) {
+        List<Tile> tiles = Arrays.asList(Tile.parseCode(11), Tile.parseCode(12), Tile.parseCode(13), Tile.parseCode(14));
+        List<EfficiencyEntry> entries = analyzeEfficiency(tiles, tile -> tile.getCode() < 40 && (tile.getValue() == 2 || tile.getValue() == 5 || tile.getValue() == 8));
+        System.out.println(entries);
+    }
 
     /**
      * 分析一组麻将牌的牌效
@@ -43,7 +49,7 @@ public class EfficiencyUtils {
      * @param tiles           牌
      * @param leaderPredicate 判断一张牌可否作为将牌
      */
-    public static void analyzeEfficiency(List<Tile> tiles, Predicate<Tile> leaderPredicate) {
+    public static List<EfficiencyEntry> analyzeEfficiency(List<Tile> tiles, Predicate<Tile> leaderPredicate) {
         if (tiles == null || tiles.isEmpty()) {
             throw new IllegalArgumentException("牌的数量不能为空");
         }
@@ -53,8 +59,25 @@ public class EfficiencyUtils {
         }
         int needGroups = (size - 1) / 3;
         //按类型分组
-        Map<Type, List<Tile>> typeTiles = tiles.stream().collect(Collectors.groupingBy(Tile::getType));
-        typeTiles.forEach((type, list) -> analyzeEfficiency(type, list, leaderPredicate));
+        List<List<EfficiencyEntry>> list = tiles.stream().collect(Collectors.groupingBy(Tile::getType)).entrySet().stream().map(entry -> analyzeEfficiency(entry.getKey(), entry.getValue(), leaderPredicate)).collect(Collectors.toList());
+
+        List<EfficiencyEntry> sourceEntries = list.get(0);
+        List<EfficiencyEntry> nextEntries = new ArrayList<>();
+
+        for (int i = 1; i < list.size(); i++) {
+            for (EfficiencyEntry entry : list.get(i)) {
+                nextEntries.addAll(sourceEntries.stream().map(e -> e.join(entry)).collect(Collectors.toList()));
+            }
+            sourceEntries = nextEntries;
+            nextEntries = new ArrayList<>();
+        }
+        return nextEntries;
+    }
+
+    private void iterator(List<List<EfficiencyEntry>> entries, int floor) {
+        entries.get(floor).forEach(entry -> {
+
+        });
     }
 
     /**
@@ -107,59 +130,106 @@ public class EfficiencyUtils {
      */
     private static void analyzeEfficiency(Type type, int[] tiles, Predicate<Tile> leaderPredicate, int val, EfficiencyEntry entry, List<EfficiencyEntry> entries) {
         if (val >= tiles.length) {
-            //结束了
-            //零牌是否存在单张将牌
-            boolean existSingleLeader = false;
-            for (int i = 1; i < tiles.length; i++) {
-                //存在零牌，并且符合特殊将牌 或者 无特殊将牌规则
-                Tile leader = type.tile(i);
-                if (tiles[i] > 0 && (leaderPredicate == null || leaderPredicate.test(leader))) {
-                    existSingleLeader = true;
-                    entry.addEffectiveLeaderTile(leader);
-                }
+            //结束了 收集复制的可能性
+            if (entry.isValid()) {
+                entries.add(entry.copy());
             }
-            entry.getKey().setExistSingleLeader(existSingleLeader);
-            //收集复制的可能性
-            entries.add(entry.copy());
-            //移除掉存在单张将牌的状态 & 有效进张
-            entry.clearExistSingleLeader();
             return;
         }
         if (tiles[val] <= 0) {
             analyzeEfficiency(type, tiles, leaderPredicate, val + 1, entry, entries);
             return;
         }
-        //提取一张牌
-        tiles[val]--;
-
         //寻找一句话的可能性
         analyzeGroup(type, tiles, leaderPredicate, val, entry, entries, false);
         //寻找一坎的可能性
         analyzeGroup(type, tiles, leaderPredicate, val, entry, entries, true);
         //寻找1对将牌的可能性
-
-        // TODO: 2023/6/16 寻找搭子的可能性
-        //  3 4 两面搭子
-        //  3 5 卡张搭子
-        //  3 5 7 双卡张搭子
-        //  3 3 4 两面搭子
-        //  3 4 4 两面搭子
-
-
+        analyzeLeaderPair(type, tiles, leaderPredicate, val, entry, entries);
+        //寻找 x、x+1 两面搭子的可能性
+        analyzePairs(type, tiles, leaderPredicate, val, entry, entries, val + 1, -1);
+        //寻找 x、x+2 卡张搭子的可能性
+        analyzePairs(type, tiles, leaderPredicate, val, entry, entries, val + 2, -1);
+        //寻找 x、x+2、x+4 双卡张搭子的可能性
+        analyzePairs(type, tiles, leaderPredicate, val, entry, entries, val + 2, val + 4);
+        //寻找 x、x、x+1 两面搭子
+        analyzePairs(type, tiles, leaderPredicate, val, entry, entries, val, val + 1);
+        //寻找 x、x+1、x+1 两面搭子
+        analyzePairs(type, tiles, leaderPredicate, val, entry, entries, val + 1, val + 1);
+        //寻找单将的可能性
+        analyzeLeader(type, tiles, leaderPredicate, val, entry, entries);
         //没有更多的可能性了，分析下一张牌
         analyzeEfficiency(type, tiles, leaderPredicate, val + 1, entry, entries);
+    }
+
+    /**
+     * 组成搭子的可能性
+     *
+     * @param first  组成搭子的第一张牌
+     * @param second 组成搭子的第二张牌
+     * @param third  组成搭子的第三张牌，可不需要，填-1
+     */
+    private static void analyzePairs(Type type, int[] tiles, Predicate<Tile> leaderPredicate, int val, EfficiencyEntry entry, List<EfficiencyEntry> entries, int first, int second, int third) {
+        // TODO: 2023/6/18 构建Effect对象，计算可进牌数
+        if (third == -1) {
+            //两张牌组成的搭子
+            if (first < tiles.length && tiles[first] > 0) {
+                tiles[first]--;
+                entry.getKey().increasePairs();
+                analyzeEfficiency(type, tiles, leaderPredicate, val, entry, entries);
+                tiles[first]++;
+                entry.getKey().decreasePairs();
+            }
+        } else {
+            //三张牌组成的搭子
+            if (first < tiles.length && second < tiles.length && tiles[first] > 0 && tiles[second] > 0) {
+                tiles[first]--;
+                tiles[second]--;
+                entry.getKey().increasePairs();
+                analyzeEfficiency(type, tiles, leaderPredicate, val, entry, entries);
+                tiles[first]++;
+                tiles[second]++;
+                entry.getKey().decreasePairs();
+            }
+        }
+    }
+
+    /**
+     * 寻找1对将牌的可能性
+     */
+    private static void analyzeLeaderPair(Type type, int[] tiles, Predicate<Tile> leaderPredicate, int val, EfficiencyEntry entry, List<EfficiencyEntry> entries) {
+        if (leaderPredicate.test(type.tile(val)) && tiles[val] >= 2) {
+            //该牌是否能作为将牌，且有两张牌
+            Effect.leaderPair(type.tile(val)).applyAndRevoke(tiles, entry, () -> analyzeEfficiency(type, tiles, leaderPredicate, val, entry, entries));
+        }
+    }
+
+    /**
+     * 寻找单将的可能性
+     */
+    private static void analyzeLeader(Type type, int[] tiles, Predicate<Tile> leaderPredicate, int val, EfficiencyEntry entry, List<EfficiencyEntry> entries) {
+        if (leaderPredicate.test(type.tile(val)) && tiles[val] > 0) {
+            //该牌是否能作为将牌，且剩余还有一张余牌
+            tiles[val]--;
+            entry.getKey().setExistLeader(true);
+            analyzeEfficiency(type, tiles, leaderPredicate, val, entry, entries);
+            tiles[val]++;
+            entry.getKey().setExistLeader(false);
+        }
     }
 
     /**
      * 分析存在一句话的可能性，例如a/b/c   a/a/a
      */
     private static void analyzeGroup(Type type, int[] tiles, Predicate<Tile> leaderPredicate, int val, EfficiencyEntry entry, List<EfficiencyEntry> entries, boolean isSame) {
-        Group group = isSame ? peelSameGroup(type, tiles, val) : peelDiffGroup(type, tiles, val);
-        if (group != null) {
-            entry.getKey().increaseGroup();
-            analyzeEfficiency(type, tiles, leaderPredicate, val, entry, entries);
-            entry.getKey().decreaseGroup();
-            restore(tiles, group);
+        Effect effect;
+        if (isSame) {
+            effect = peelSameGroup(type, tiles, val);
+        } else {
+            effect = peelDiffGroup(type, tiles, val);
+        }
+        if (effect != null) {
+            effect.applyAndRevoke(tiles, entry, () -> analyzeEfficiency(type, tiles, leaderPredicate, val, entry, entries));
         }
     }
 
@@ -171,11 +241,9 @@ public class EfficiencyUtils {
      * @param val   关键牌，组合的其他牌必须大于该牌，因为小于该牌的可能性，在前面的坐标中已经分析了
      * @return 组合，可能为空
      */
-    private static Group peelDiffGroup(Type type, int[] tiles, int val) {
-        if (type.isAllowDiffGroup() && tiles[val + 1] > 0 && tiles[val + 2] > 0) {
-            tiles[val + 1]--;
-            tiles[val + 2]--;
-            return new Group(new Tile(val, type), false);
+    private static Effect peelDiffGroup(Type type, int[] tiles, int val) {
+        if (val + 2 < tiles.length && type.isAllowDiffGroup() && tiles[val] > 0 && tiles[val + 1] > 0 && tiles[val + 2] > 0) {
+            return Effect.diffGroup(type.tile(val));
         }
         return null;
     }
@@ -188,11 +256,9 @@ public class EfficiencyUtils {
      * @param val   关键牌，组合的其他牌必须大于该牌，因为小于该牌的可能性，在前面的坐标中已经分析了
      * @return 组合，可能为空
      */
-    private static Group peelSameGroup(Type type, int[] tiles, int val) {
-        if (type.isAllowDiffGroup() && tiles[val] >= 2) {
-            tiles[val]--;
-            tiles[val]--;
-            return new Group(new Tile(val, type), true);
+    private static Effect peelSameGroup(Type type, int[] tiles, int val) {
+        if (tiles[val] >= 3) {
+            return Effect.sameGroup(type.tile(val));
         }
         return null;
     }

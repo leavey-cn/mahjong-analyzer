@@ -36,44 +36,40 @@ public class EfficiencyKey {
      */
     private int groups;
     /**
-     * 是否已存在将牌
+     * 存在的将牌对数
      */
-    private boolean existLeader;
+    private int leaderPairs;
     /**
      * 存在的搭子数
      */
     private int pairs;
     /**
-     * 是否存在将牌搭子
+     * 散将数量
      */
-    private boolean existSingleLeader;
+    private int leaders;
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         EfficiencyKey that = (EfficiencyKey) o;
-        return groups == that.groups && existLeader == that.existLeader && pairs == that.pairs && existSingleLeader == that.existSingleLeader;
+        return groups == that.groups && leaderPairs == that.leaderPairs && pairs == that.pairs && leaders == that.leaders;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(groups, existLeader, pairs, existSingleLeader);
+        return Objects.hash(groups, leaderPairs, pairs, leaders);
     }
 
-    public void increaseGroup() {
-        groups++;
-    }
-    public void decreaseGroup(){
-        groups--;
+    public EfficiencyKey copy() {
+        return new EfficiencyKey(groups, leaderPairs, pairs, leaders);
     }
 
-    public void setExistSingleLeader(boolean existSingleLeader) {
-        this.existSingleLeader = existSingleLeader;
+    public EfficiencyKey join(EfficiencyKey other) {
+        return new EfficiencyKey(groups + other.groups, leaderPairs + other.leaderPairs, pairs + other.pairs, leaders + other.leaders);
     }
 
-    public EfficiencyKey copy(){
-        return new EfficiencyKey(groups,existLeader,pairs, existSingleLeader);
+    public boolean isValid() {
+        return groups > 0 || leaderPairs > 0 || pairs > 0 || leaders > 0;
     }
-
 }

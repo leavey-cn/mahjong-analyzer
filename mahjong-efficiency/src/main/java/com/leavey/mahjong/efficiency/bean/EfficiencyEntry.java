@@ -17,11 +17,13 @@
 package com.leavey.mahjong.efficiency.bean;
 
 import com.leavey.mahjong.common.bean.Tile;
+import com.leavey.mahjong.efficiency.util.Effect;
+import com.leavey.mahjong.efficiency.util.EfficiencyType;
 import lombok.RequiredArgsConstructor;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Function;
 
 /**
  * 牌效的信息
@@ -37,45 +39,57 @@ public class EfficiencyEntry {
     /**
      * 可进的牌
      */
-    private final Set<Tile> tiles;
+    private final Map<Tile, Integer> tiles;
     /**
      * 可进的将牌
      */
-    private final Set<Tile> leaderTiles;
+    private final Map<Tile, Integer> leaderTiles;
 
     public EfficiencyEntry() {
         this.key = new EfficiencyKey();
-        this.tiles = new HashSet<>();
-        this.leaderTiles = new HashSet<>();
+        this.tiles = new HashMap<>();
+        this.leaderTiles = new HashMap<>();
     }
 
-    /**
-     * 添加一张有效进张牌
-     */
-    public void addEffectiveTile(Tile tile) {
-        tiles.add(tile);
+    public void apply(Effect effect) {
+        apply(effect.getEfficiencyType(), effect.getValue(), Function.identity());
     }
 
-    /**
-     * 添加一张有效进张将牌
-     */
-    public void addEffectiveLeaderTile(Tile tile) {
-        leaderTiles.add(tile);
+    public void revoke(Effect effect) {
+        apply(effect.getEfficiencyType(), effect.getValue(), i -> -i);
     }
 
-    /**
-     * 清除掉单张将牌的分析
-     */
-    public void clearExistSingleLeader() {
-        key.setExistSingleLeader(false);
-        leaderTiles.clear();
+    private void apply(EfficiencyType efficiencyType, int amount, Function<Integer, Integer> function) {
+        Integer applyAmount = function.apply(amount);
+        if (efficiencyType == EfficiencyType.GROUP) {
+            key.setGroups(key.getGroups() + applyAmount);
+        } else if (efficiencyType == EfficiencyType.PAIR) {
+            key.setPairs(key.getPairs() + applyAmount);
+        } else if (efficiencyType == EfficiencyType.LEADER_PAIR) {
+            key.setLeaderPairs(key.getLeaderPairs() + applyAmount);
+        } else if (efficiencyType == EfficiencyType.LEADER) {
+            key.setLeaders(key.getLeaders() + applyAmount);
+        } else {
+            throw new IllegalStateException(efficiencyType.toString());
+        }
     }
 
-    public EfficiencyKey getKey() {
-        return key;
+    public boolean isValid(){
+        return key.isValid();
     }
 
     public EfficiencyEntry copy() {
-        return new EfficiencyEntry(key.copy(), new HashSet<>(tiles), new HashSet<>(leaderTiles));
+        return new EfficiencyEntry(key.copy(), new HashMap<>(tiles), new HashMap<>(leaderTiles));
     }
+
+    public EfficiencyEntry join(EfficiencyEntry other) {
+        return new EfficiencyEntry(key.join(other.key), combine(tiles, other.tiles), combine(leaderTiles, other.leaderTiles));
+    }
+
+    private static Map<Tile, Integer> combine(Map<Tile, Integer> map1, Map<Tile, Integer> map2) {
+        Map<Tile, Integer> result = new HashMap<>(map1);
+        map2.forEach((key, amount) -> result.compute(key, (tile, oldValue) -> oldValue == null ? amount : amount + oldValue));
+        return result;
+    }
+
 }
