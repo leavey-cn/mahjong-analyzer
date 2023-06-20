@@ -16,6 +16,8 @@
 
 package com.leavey.mahjong.common.bean;
 
+import com.leavey.mahjong.common.exception.ErrorTileException;
+
 /**
  * @author Leavey
  */
@@ -86,7 +88,7 @@ public enum Type {
         return allowDiffGroup;
     }
 
-    public Tile tile(int value) {
+    public Tile tile(int value) throws ErrorTileException {
         return new Tile(value, this);
     }
 }

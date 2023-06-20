@@ -41,15 +41,15 @@ public class PossibilityEffect {
     public static List<Effect> possibleEffects(Tile tile, boolean canLeader) {
         return Stream.of(
                         analyzeSameGroup(tile),
-                        analyzeDiffGroup(tile),
+                        tile.getType().isAllowDiffGroup() ? analyzeDiffGroup(tile) : null,
                         canLeader ? analyzeLeader(tile) : null,
                         pairsXX(tile),
-                        pairsXX1(tile),
-                        pairsXX2(tile),
-                        pairsXX2X4(tile),
-                        pairsXXX1(tile),
-                        pairsXXX2(tile),
-                        pairsXX1X1(tile),
+                        tile.getType().isAllowDiffGroup() ? pairsXX1(tile) : null,
+                        tile.getType().isAllowDiffGroup() ? pairsXX2(tile) : null,
+                        tile.getType().isAllowDiffGroup() ? pairsXX2X4(tile) : null,
+                        tile.getType().isAllowDiffGroup() ? pairsXXX1(tile) : null,
+                        tile.getType().isAllowDiffGroup() ? pairsXXX2(tile) : null,
+                        tile.getType().isAllowDiffGroup() ? pairsXX1X1(tile) : null,
                         canLeader ? analyzeLeaderPairs(tile) : null
                 ).filter(Objects::nonNull)
                 .collect(Collectors.toList());

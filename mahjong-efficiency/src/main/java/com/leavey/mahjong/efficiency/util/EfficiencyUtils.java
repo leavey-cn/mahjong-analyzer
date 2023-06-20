@@ -133,8 +133,14 @@ public class EfficiencyUtils {
             analyzeEfficiency(type, tiles, leaderPredicate, val + 1, entry, entries);
             return;
         }
-        PossibilityEffect.possibleEffects(type.tile(val),leaderPredicate.test(type.tile(val)))
-                .forEach(effect -> effect.applyAndRevoke(tiles,entry,() -> analyzeEfficiency(type, tiles, leaderPredicate, val, entry, entries)));
+        Tile tile;
+        try {
+            tile = type.tile(val);
+        } catch (ErrorTileException e) {
+            throw new RuntimeException(e);
+        }
+        PossibilityEffect.possibleEffects(tile, leaderPredicate.test(tile))
+                .forEach(effect -> effect.applyAndRevoke(tiles, entry, () -> analyzeEfficiency(type, tiles, leaderPredicate, val, entry, entries)));
 
         //没有更多的可能性了，分析下一张牌
         analyzeEfficiency(type, tiles, leaderPredicate, val + 1, entry, entries);

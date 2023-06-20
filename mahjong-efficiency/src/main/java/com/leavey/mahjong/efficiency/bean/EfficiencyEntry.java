@@ -22,8 +22,9 @@ import com.leavey.mahjong.efficiency.util.EfficiencyType;
 import lombok.RequiredArgsConstructor;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.Optional;
 
 /**
  * 牌效的信息
@@ -52,15 +53,16 @@ public class EfficiencyEntry {
     }
 
     public void apply(Effect effect) {
-        apply(effect.getEfficiencyType(), effect.getValue(), Function.identity());
+        apply(effect, false);
     }
 
     public void revoke(Effect effect) {
-        apply(effect.getEfficiencyType(), effect.getValue(), i -> -i);
+        apply(effect, true);
     }
 
-    private void apply(EfficiencyType efficiencyType, int amount, Function<Integer, Integer> function) {
-        Integer applyAmount = function.apply(amount);
+    private void apply(Effect effect, boolean isNegated) {
+        EfficiencyType efficiencyType = effect.getEfficiencyType();
+        int applyAmount = isNegated ? -effect.getValue() : effect.getValue();
         if (efficiencyType == EfficiencyType.GROUP) {
             key.setGroups(key.getGroups() + applyAmount);
         } else if (efficiencyType == EfficiencyType.PAIR) {
@@ -72,9 +74,14 @@ public class EfficiencyEntry {
         } else {
             throw new IllegalStateException(efficiencyType.toString());
         }
+        int additional = isNegated ? -1 : 1;
+        Optional.ofNullable(effect.getTiles()).orElse(List.of())
+                .forEach(tile -> tiles.put(tile, tiles.getOrDefault(tile, 0) + additional));
+        Optional.ofNullable(effect.getLeaderTiles()).orElse(List.of())
+                .forEach(tile -> leaderTiles.put(tile, leaderTiles.getOrDefault(tile, 0) + additional));
     }
 
-    public boolean isValid(){
+    public boolean isValid() {
         return key.isValid();
     }
 
