@@ -18,13 +18,12 @@ package com.leavey.mahjong.efficiency.util;
 
 import com.leavey.mahjong.common.bean.Tile;
 import com.leavey.mahjong.common.bean.Type;
+import com.leavey.mahjong.common.exception.ErrorTileException;
 import com.leavey.mahjong.efficiency.bean.EfficiencyEntry;
-import com.leavey.mahjong.efficiency.bean.Group;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -37,7 +36,7 @@ import java.util.stream.Stream;
  */
 public class EfficiencyUtils {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws ErrorTileException {
         List<Tile> tiles = Arrays.asList(Tile.parseCode(11), Tile.parseCode(12), Tile.parseCode(13), Tile.parseCode(14));
         List<EfficiencyEntry> entries = analyzeEfficiency(tiles, tile -> tile.getCode() < 40 && (tile.getValue() == 2 || tile.getValue() == 5 || tile.getValue() == 8));
         System.out.println(entries);
@@ -72,12 +71,6 @@ public class EfficiencyUtils {
             nextEntries = new ArrayList<>();
         }
         return nextEntries;
-    }
-
-    private void iterator(List<List<EfficiencyEntry>> entries, int floor) {
-        entries.get(floor).forEach(entry -> {
-
-        });
     }
 
     /**
@@ -140,144 +133,10 @@ public class EfficiencyUtils {
             analyzeEfficiency(type, tiles, leaderPredicate, val + 1, entry, entries);
             return;
         }
-        //寻找一句话的可能性
-        analyzeGroup(type, tiles, leaderPredicate, val, entry, entries, false);
-        //寻找一坎的可能性
-        analyzeGroup(type, tiles, leaderPredicate, val, entry, entries, true);
-        //寻找1对将牌的可能性
-        analyzeLeaderPair(type, tiles, leaderPredicate, val, entry, entries);
-        //寻找 x、x+1 两面搭子的可能性
-        analyzePairs(type, tiles, leaderPredicate, val, entry, entries, val + 1, -1);
-        //寻找 x、x+2 卡张搭子的可能性
-        analyzePairs(type, tiles, leaderPredicate, val, entry, entries, val + 2, -1);
-        //寻找 x、x+2、x+4 双卡张搭子的可能性
-        analyzePairs(type, tiles, leaderPredicate, val, entry, entries, val + 2, val + 4);
-        //寻找 x、x、x+1 两面搭子
-        analyzePairs(type, tiles, leaderPredicate, val, entry, entries, val, val + 1);
-        //寻找 x、x+1、x+1 两面搭子
-        analyzePairs(type, tiles, leaderPredicate, val, entry, entries, val + 1, val + 1);
-        //寻找单将的可能性
-        analyzeLeader(type, tiles, leaderPredicate, val, entry, entries);
+        PossibilityEffect.possibleEffects(type.tile(val),leaderPredicate.test(type.tile(val)))
+                .forEach(effect -> effect.applyAndRevoke(tiles,entry,() -> analyzeEfficiency(type, tiles, leaderPredicate, val, entry, entries)));
+
         //没有更多的可能性了，分析下一张牌
         analyzeEfficiency(type, tiles, leaderPredicate, val + 1, entry, entries);
-    }
-
-    /**
-     * 组成搭子的可能性
-     *
-     * @param first  组成搭子的第一张牌
-     * @param second 组成搭子的第二张牌
-     * @param third  组成搭子的第三张牌，可不需要，填-1
-     */
-    private static void analyzePairs(Type type, int[] tiles, Predicate<Tile> leaderPredicate, int val, EfficiencyEntry entry, List<EfficiencyEntry> entries, int first, int second, int third) {
-        // TODO: 2023/6/18 构建Effect对象，计算可进牌数
-        if (third == -1) {
-            //两张牌组成的搭子
-            if (first < tiles.length && tiles[first] > 0) {
-                tiles[first]--;
-                entry.getKey().increasePairs();
-                analyzeEfficiency(type, tiles, leaderPredicate, val, entry, entries);
-                tiles[first]++;
-                entry.getKey().decreasePairs();
-            }
-        } else {
-            //三张牌组成的搭子
-            if (first < tiles.length && second < tiles.length && tiles[first] > 0 && tiles[second] > 0) {
-                tiles[first]--;
-                tiles[second]--;
-                entry.getKey().increasePairs();
-                analyzeEfficiency(type, tiles, leaderPredicate, val, entry, entries);
-                tiles[first]++;
-                tiles[second]++;
-                entry.getKey().decreasePairs();
-            }
-        }
-    }
-
-    /**
-     * 寻找1对将牌的可能性
-     */
-    private static void analyzeLeaderPair(Type type, int[] tiles, Predicate<Tile> leaderPredicate, int val, EfficiencyEntry entry, List<EfficiencyEntry> entries) {
-        if (leaderPredicate.test(type.tile(val)) && tiles[val] >= 2) {
-            //该牌是否能作为将牌，且有两张牌
-            Effect.leaderPair(type.tile(val)).applyAndRevoke(tiles, entry, () -> analyzeEfficiency(type, tiles, leaderPredicate, val, entry, entries));
-        }
-    }
-
-    /**
-     * 寻找单将的可能性
-     */
-    private static void analyzeLeader(Type type, int[] tiles, Predicate<Tile> leaderPredicate, int val, EfficiencyEntry entry, List<EfficiencyEntry> entries) {
-        if (leaderPredicate.test(type.tile(val)) && tiles[val] > 0) {
-            //该牌是否能作为将牌，且剩余还有一张余牌
-            tiles[val]--;
-            entry.getKey().setExistLeader(true);
-            analyzeEfficiency(type, tiles, leaderPredicate, val, entry, entries);
-            tiles[val]++;
-            entry.getKey().setExistLeader(false);
-        }
-    }
-
-    /**
-     * 分析存在一句话的可能性，例如a/b/c   a/a/a
-     */
-    private static void analyzeGroup(Type type, int[] tiles, Predicate<Tile> leaderPredicate, int val, EfficiencyEntry entry, List<EfficiencyEntry> entries, boolean isSame) {
-        Effect effect;
-        if (isSame) {
-            effect = peelSameGroup(type, tiles, val);
-        } else {
-            effect = peelDiffGroup(type, tiles, val);
-        }
-        if (effect != null) {
-            effect.applyAndRevoke(tiles, entry, () -> analyzeEfficiency(type, tiles, leaderPredicate, val, entry, entries));
-        }
-    }
-
-    /**
-     * 从手牌中抽离可以组合成一句话的牌
-     *
-     * @param type  牌的颜色
-     * @param tiles 手牌
-     * @param val   关键牌，组合的其他牌必须大于该牌，因为小于该牌的可能性，在前面的坐标中已经分析了
-     * @return 组合，可能为空
-     */
-    private static Effect peelDiffGroup(Type type, int[] tiles, int val) {
-        if (val + 2 < tiles.length && type.isAllowDiffGroup() && tiles[val] > 0 && tiles[val + 1] > 0 && tiles[val + 2] > 0) {
-            return Effect.diffGroup(type.tile(val));
-        }
-        return null;
-    }
-
-    /**
-     * 从手牌中抽离可以组合成一坎的牌
-     *
-     * @param type  牌的颜色
-     * @param tiles 手牌
-     * @param val   关键牌，组合的其他牌必须大于该牌，因为小于该牌的可能性，在前面的坐标中已经分析了
-     * @return 组合，可能为空
-     */
-    private static Effect peelSameGroup(Type type, int[] tiles, int val) {
-        if (tiles[val] >= 3) {
-            return Effect.sameGroup(type.tile(val));
-        }
-        return null;
-    }
-
-    /**
-     * 分析完成后，将group重新填充进手牌
-     *
-     * @param tiles 手牌
-     * @param group 组合
-     */
-    public static void restore(int[] tiles, Group group) {
-        Tile tile = group.getTile();
-        tiles[tile.getValue()]++;
-        if (group.isSame()) {
-            tiles[tile.getValue()]++;
-            tiles[tile.getValue()]++;
-        } else {
-            tiles[tile.getValue() + 1]++;
-            tiles[tile.getValue() + 2]++;
-        }
     }
 }

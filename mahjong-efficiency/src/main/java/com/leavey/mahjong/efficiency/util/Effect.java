@@ -17,35 +17,46 @@
 package com.leavey.mahjong.efficiency.util;
 
 import com.leavey.mahjong.common.bean.Tile;
-import com.leavey.mahjong.common.bean.Type;
 import com.leavey.mahjong.efficiency.bean.EfficiencyEntry;
 import lombok.Data;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * @author Leavey
  */
 @Data
 public class Effect {
-    private EfficiencyType efficiencyType;
-    private int value;
+    public EfficiencyType efficiencyType;
+    public int value;
     //可进的牌
-    private List<Tile> tiles;
+    public List<Tile> tiles;
     //可进的将牌
-    private List<Tile> leaderTiles;
+    public List<Tile> leaderTiles;
 
     //对手牌的影响
-    private List<Tile> handTiles;
+    public List<Tile> handTiles;
 
     public void applyAndRevoke(int[] tiles, EfficiencyEntry entry, Runnable callback) {
-        applyHandTiles(tiles);
-        entry.apply(this);
-        callback.run();
-        revokeHandTiles(tiles);
-        entry.revoke(this);
+        if (canApply(tiles)) {
+            applyHandTiles(tiles);
+            entry.apply(this);
+            callback.run();
+            revokeHandTiles(tiles);
+            entry.revoke(this);
+        }
+    }
+
+    /**
+     * 根据当前手牌的余量，判断是否存在此可能性
+     *
+     * @param tiles 手牌
+     * @return /
+     */
+    private boolean canApply(int[] tiles) {
+        return handTiles.stream().collect(Collectors.groupingBy(Tile::getValue, Collectors.counting()))
+                .entrySet().stream().noneMatch(entry -> tiles[entry.getKey()] < entry.getValue());
     }
 
     private void applyHandTiles(int[] tiles) {
@@ -58,30 +69,5 @@ public class Effect {
         if (handTiles != null) {
             handTiles.forEach(t -> tiles[t.getValue()]++);
         }
-    }
-
-
-    public static Effect sameGroup(Tile tile) {
-        Effect effect = new Effect();
-        effect.efficiencyType = EfficiencyType.GROUP;
-        effect.value = 1;
-        effect.handTiles = List.of(tile, tile, tile);
-        return effect;
-    }
-
-    public static Effect diffGroup(Tile tile) {
-        Effect effect = new Effect();
-        effect.efficiencyType = EfficiencyType.GROUP;
-        effect.value = 1;
-        effect.handTiles = List.of(tile, tile.next(), tile.next().next());
-        return effect;
-    }
-
-    public static Effect leaderPair(Tile tile) {
-        Effect effect = new Effect();
-        effect.efficiencyType = EfficiencyType.LEADER_PAIR;
-        effect.value = 1;
-        effect.handTiles = List.of(tile, tile);
-        return effect;
     }
 }

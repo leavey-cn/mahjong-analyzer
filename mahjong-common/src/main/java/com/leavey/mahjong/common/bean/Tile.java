@@ -16,6 +16,8 @@
 
 package com.leavey.mahjong.common.bean;
 
+import com.leavey.mahjong.common.exception.ErrorTileException;
+
 import java.util.Objects;
 
 /**
@@ -27,14 +29,14 @@ public class Tile implements Comparable<Tile> {
     private final int value;
     private final Type type;
 
-    public Tile(int value, Type type) {
+    public Tile(int value, Type type) throws ErrorTileException {
         this.value = value;
         this.type = type;
         if (value <= 0) {
-            throw new IllegalArgumentException(type + "类型的牌值必须大于0 ");
+            throw new ErrorTileException(type + "类型的牌值必须大于0 ");
         }
         if (value > type.getMaxValue()) {
-            throw new IllegalArgumentException(type + "类型的牌值必须小于等于 " + type.getMaxValue());
+            throw new ErrorTileException(type + "类型的牌值必须小于等于 " + type.getMaxValue());
         }
     }
 
@@ -42,14 +44,14 @@ public class Tile implements Comparable<Tile> {
         return type.getBase() + value;
     }
 
-    public static Tile parseCode(int code) {
+    public static Tile parseCode(int code)throws ErrorTileException {
         for (Type type : Type.values()) {
             int val = code - type.getBase();
             if (val >= 1 && val < 10) {
                 return new Tile(val, type);
             }
         }
-        throw new IllegalArgumentException(code + "");
+        throw new ErrorTileException(code + "");
     }
 
     public int getValue() {
@@ -73,11 +75,11 @@ public class Tile implements Comparable<Tile> {
         return Objects.hash(value, type);
     }
 
-    public Tile next() {
+    public Tile next() throws ErrorTileException {
         return new Tile(value + 1, type);
     }
 
-    public Tile prev() {
+    public Tile prev()throws ErrorTileException {
         return new Tile(value - 1, type);
     }
 
