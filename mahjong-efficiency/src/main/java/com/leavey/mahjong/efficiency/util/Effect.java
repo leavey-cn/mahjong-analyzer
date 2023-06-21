@@ -17,8 +17,10 @@
 package com.leavey.mahjong.efficiency.util;
 
 import com.leavey.mahjong.common.bean.Tile;
+import com.leavey.mahjong.efficiency.bean.Combination;
 import com.leavey.mahjong.efficiency.bean.EfficiencyEntry;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -27,6 +29,7 @@ import java.util.stream.Collectors;
  * @author Leavey
  */
 @Data
+@EqualsAndHashCode
 public class Effect {
     public EfficiencyType efficiencyType;
     public int value;
@@ -46,6 +49,10 @@ public class Effect {
             revokeHandTiles(tiles);
             entry.revoke(this);
         }
+    }
+
+    public Combination toCombination() {
+        return new Combination(handTiles);
     }
 
     /**

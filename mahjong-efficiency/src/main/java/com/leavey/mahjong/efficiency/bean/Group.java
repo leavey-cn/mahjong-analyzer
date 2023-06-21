@@ -19,9 +19,6 @@ package com.leavey.mahjong.efficiency.bean;
 import com.leavey.mahjong.common.bean.Tile;
 import lombok.Getter;
 
-import java.util.Arrays;
-import java.util.Comparator;
-
 /**
  * 一句话
  *

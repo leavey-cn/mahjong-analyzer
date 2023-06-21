@@ -21,10 +21,7 @@ import com.leavey.mahjong.efficiency.util.Effect;
 import com.leavey.mahjong.efficiency.util.EfficiencyType;
 import lombok.RequiredArgsConstructor;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * 牌效的信息
@@ -46,10 +43,13 @@ public class EfficiencyEntry {
      */
     private final Map<Tile, Integer> leaderTiles;
 
+    private final List<Combination> combinations;
+
     public EfficiencyEntry() {
         this.key = new EfficiencyKey();
         this.tiles = new HashMap<>();
         this.leaderTiles = new HashMap<>();
+        this.combinations = new ArrayList<>();
     }
 
     public void apply(Effect effect) {
@@ -76,9 +76,28 @@ public class EfficiencyEntry {
         }
         int additional = isNegated ? -1 : 1;
         Optional.ofNullable(effect.getTiles()).orElse(List.of())
-                .forEach(tile -> tiles.put(tile, tiles.getOrDefault(tile, 0) + additional));
+                .forEach(tile -> {
+                    int newValue = tiles.getOrDefault(tile, 0) + additional;
+                    if (newValue == 0) {
+                        tiles.remove(tile);
+                    } else {
+                        tiles.put(tile, newValue);
+                    }
+                });
         Optional.ofNullable(effect.getLeaderTiles()).orElse(List.of())
-                .forEach(tile -> leaderTiles.put(tile, leaderTiles.getOrDefault(tile, 0) + additional));
+                .forEach(tile -> {
+                    int newValue = leaderTiles.getOrDefault(tile, 0) + additional;
+                    if (newValue == 0) {
+                        leaderTiles.remove(tile);
+                    } else {
+                        leaderTiles.put(tile, newValue);
+                    }
+                });
+        if (isNegated) {
+            this.combinations.remove(effect.toCombination());
+        } else {
+            this.combinations.add(effect.toCombination());
+        }
     }
 
     public boolean isValid() {
@@ -86,11 +105,13 @@ public class EfficiencyEntry {
     }
 
     public EfficiencyEntry copy() {
-        return new EfficiencyEntry(key.copy(), new HashMap<>(tiles), new HashMap<>(leaderTiles));
+        return new EfficiencyEntry(key.copy(), new HashMap<>(tiles), new HashMap<>(leaderTiles), new ArrayList<>(combinations));
     }
 
     public EfficiencyEntry join(EfficiencyEntry other) {
-        return new EfficiencyEntry(key.join(other.key), combine(tiles, other.tiles), combine(leaderTiles, other.leaderTiles));
+        ArrayList<Combination> newCombinations = new ArrayList<>(combinations);
+        newCombinations.addAll(other.combinations);
+        return new EfficiencyEntry(key.join(other.key), combine(tiles, other.tiles), combine(leaderTiles, other.leaderTiles), newCombinations);
     }
 
     private static Map<Tile, Integer> combine(Map<Tile, Integer> map1, Map<Tile, Integer> map2) {

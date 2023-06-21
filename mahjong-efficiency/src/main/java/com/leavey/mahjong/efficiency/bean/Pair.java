@@ -27,15 +27,12 @@ import java.util.Comparator;
  * @author Leavey
  */
 public class Pair {
-
     private final Tile[] tiles;
-
 
     public Pair(Tile t1, Tile t2) {
         this.tiles = new Tile[]{t1, t2};
         Arrays.sort(tiles, Comparator.comparingInt(Tile::getCode));
     }
-
 
     public Pair(Tile t1, Tile t2, Tile t3) {
         this.tiles = new Tile[]{t1, t2, t3};
