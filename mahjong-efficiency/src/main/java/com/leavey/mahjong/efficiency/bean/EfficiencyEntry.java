@@ -17,11 +17,17 @@
 package com.leavey.mahjong.efficiency.bean;
 
 import com.leavey.mahjong.common.bean.Tile;
+import com.leavey.mahjong.common.bean.Type;
+import com.leavey.mahjong.common.exception.ErrorTileException;
 import com.leavey.mahjong.efficiency.util.Effect;
 import com.leavey.mahjong.efficiency.util.EfficiencyType;
+import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
+import lombok.ToString;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * 牌效的信息
@@ -29,7 +35,9 @@ import java.util.*;
  * @author Leavey
  */
 @RequiredArgsConstructor
-public class EfficiencyEntry {
+@EqualsAndHashCode
+@ToString
+public class EfficiencyEntry implements Comparable<EfficiencyEntry> {
     /**
      * 牌效的键
      */
@@ -44,6 +52,11 @@ public class EfficiencyEntry {
     private final Map<Tile, Integer> leaderTiles;
 
     private final List<Combination> combinations;
+
+    /**
+     * 剩余的散牌
+     */
+    private Combination singles;
 
     public EfficiencyEntry() {
         this.key = new EfficiencyKey();
@@ -104,8 +117,21 @@ public class EfficiencyEntry {
         return key.isValid();
     }
 
-    public EfficiencyEntry copy() {
-        return new EfficiencyEntry(key.copy(), new HashMap<>(tiles), new HashMap<>(leaderTiles), new ArrayList<>(combinations));
+    public EfficiencyEntry copy(Type type, int[] handTiles) {
+        List<Tile> singles = new ArrayList<>();
+        for (int i = 1; i < handTiles.length; i++) {
+            int finalI = i;
+            singles.addAll(IntStream.range(0, handTiles[i]).boxed().map(v -> {
+                try {
+                    return type.tile(finalI);
+                } catch (ErrorTileException e) {
+                    throw new RuntimeException(e);
+                }
+            }).collect(Collectors.toList()));
+        }
+        EfficiencyEntry entry = new EfficiencyEntry(key.copy(), new HashMap<>(tiles), new HashMap<>(leaderTiles), new ArrayList<>(combinations));
+        entry.singles = new Combination(singles);
+        return entry;
     }
 
     public EfficiencyEntry join(EfficiencyEntry other) {
@@ -120,4 +146,12 @@ public class EfficiencyEntry {
         return result;
     }
 
+    @Override
+    public int compareTo(EfficiencyEntry o) {
+        return key.compareTo(o.key);
+    }
+
+    public EfficiencyKey getKey() {
+        return key;
+    }
 }

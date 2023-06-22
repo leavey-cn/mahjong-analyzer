@@ -24,6 +24,7 @@ import com.leavey.mahjong.efficiency.bean.EfficiencyEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -39,7 +40,7 @@ public class EfficiencyUtils {
     public static void main(String[] args) throws ErrorTileException {
         List<Tile> tiles = Arrays.asList(Tile.parseCode(11), Tile.parseCode(12), Tile.parseCode(13), Tile.parseCode(14));
         List<EfficiencyEntry> entries = analyzeEfficiency(tiles, tile -> tile.getCode() < 40 && (tile.getValue() == 2 || tile.getValue() == 5 || tile.getValue() == 8));
-        System.out.println(entries);
+        entries.forEach(System.out::println);
     }
 
     /**
@@ -57,18 +58,28 @@ public class EfficiencyUtils {
             throw new IllegalArgumentException("牌的数量错误，只可分析1、4、7、10、13张牌");
         }
         int needGroups = (size - 1) / 3;
+        int needLeaders = 1;
         //按类型分组
-        List<List<EfficiencyEntry>> list = tiles.stream().collect(Collectors.groupingBy(Tile::getType)).entrySet().stream().map(entry -> analyzeEfficiency(entry.getKey(), entry.getValue(), leaderPredicate)).collect(Collectors.toList());
+        List<Set<EfficiencyEntry>> list = tiles.stream().collect(Collectors.groupingBy(Tile::getType)).entrySet().stream().map(entry -> analyzeEfficiency(entry.getKey(), entry.getValue(), leaderPredicate)).collect(Collectors.toList());
 
-        List<EfficiencyEntry> sourceEntries = list.get(0);
+        List<EfficiencyEntry> sourceEntries = new ArrayList<>(list.get(0));
         List<EfficiencyEntry> nextEntries = new ArrayList<>();
 
-        for (int i = 1; i < list.size(); i++) {
-            for (EfficiencyEntry entry : list.get(i)) {
-                nextEntries.addAll(sourceEntries.stream().map(e -> e.join(entry)).collect(Collectors.toList()));
+        if (list.size() == 1) {
+            nextEntries = sourceEntries;
+        } else {
+            for (int i = 1; i < list.size(); i++) {
+                for (EfficiencyEntry entry : list.get(i)) {
+                    nextEntries.addAll(sourceEntries.stream().map(e -> e.join(entry)).collect(Collectors.toList()));
+                }
+                sourceEntries = nextEntries;
+                nextEntries = new ArrayList<>();
             }
-            sourceEntries = nextEntries;
-            nextEntries = new ArrayList<>();
+        }
+        nextEntries.sort(EfficiencyEntry::compareTo);
+        List<EfficiencyEntry> wins = nextEntries.stream().filter(entry -> entry.getKey().getGroups() == needGroups && entry.getKey().getLeaders() == needLeaders).collect(Collectors.toList());
+        if (!wins.isEmpty()) {
+            return wins;
         }
         return nextEntries;
     }
@@ -79,7 +90,7 @@ public class EfficiencyUtils {
      * @param type  牌的颜色
      * @param tiles 牌的集合
      */
-    private static List<EfficiencyEntry> analyzeEfficiency(Type type, List<Tile> tiles, Predicate<Tile> leaderPredicate) {
+    private static Set<EfficiencyEntry> analyzeEfficiency(Type type, List<Tile> tiles, Predicate<Tile> leaderPredicate) {
         int[] tileArray = new int[type.getMaxValue() + 1];
         tiles.forEach(tile -> tileArray[tile.getValue()]++);
         return analyzeEfficiency(type, tileArray, leaderPredicate);
@@ -92,9 +103,9 @@ public class EfficiencyUtils {
      * @param tiles           牌的集合
      * @param leaderPredicate 判断一张牌可否作为将牌
      */
-    private static List<EfficiencyEntry> analyzeEfficiency(Type type, int[] tiles, Predicate<Tile> leaderPredicate) {
+    private static Set<EfficiencyEntry> analyzeEfficiency(Type type, int[] tiles, Predicate<Tile> leaderPredicate) {
         //遍历从任意一张牌开始，之前的牌弃掉的可能性
-        return IntStream.rangeClosed(1, type.getMaxValue()).boxed().flatMap(i -> analyzeEfficiency(type, tiles, leaderPredicate, i)).collect(Collectors.toList());
+        return IntStream.rangeClosed(1, type.getMaxValue()).boxed().flatMap(i -> analyzeEfficiency(type, tiles, leaderPredicate, i)).collect(Collectors.toSet());
     }
 
 
@@ -125,7 +136,7 @@ public class EfficiencyUtils {
         if (val >= tiles.length) {
             //结束了 收集复制的可能性
             if (entry.isValid()) {
-                entries.add(entry.copy());
+                entries.add(entry.copy(type, tiles));
             }
             return;
         }

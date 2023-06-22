@@ -30,7 +30,7 @@ import java.util.Objects;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class EfficiencyKey {
+public class EfficiencyKey implements Comparable<EfficiencyKey> {
     /**
      * 已完成的组合数
      */
@@ -71,5 +71,20 @@ public class EfficiencyKey {
 
     public boolean isValid() {
         return groups > 0 || leaderPairs > 0 || pairs > 0 || leaders > 0;
+    }
+
+    @Override
+    public int compareTo(EfficiencyKey o) {
+        int cmp = Integer.compare(groups, o.groups);
+        if (cmp == 0) {
+            cmp = Integer.compare(leaders, o.leaders);
+        }
+        if (cmp == 0) {
+            cmp = Integer.compare(pairs, o.pairs);
+        }
+        if (cmp == 0) {
+            cmp = Integer.compare(leaderPairs, o.leaderPairs);
+        }
+        return cmp * -1;
     }
 }
