@@ -18,10 +18,14 @@ package com.leavey.mahjong.common.bean;
 
 import com.leavey.mahjong.common.exception.ErrorTileException;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
- * 
  * @author Leavey
  */
 public class Tile implements Comparable<Tile> {
@@ -44,7 +48,7 @@ public class Tile implements Comparable<Tile> {
         return type.getBase() + value;
     }
 
-    public static Tile parseCode(int code)throws ErrorTileException {
+    public static Tile parseCode(int code) throws ErrorTileException {
         for (Type type : Type.values()) {
             int val = code - type.getBase();
             if (val >= 1 && val < 10) {
@@ -79,7 +83,7 @@ public class Tile implements Comparable<Tile> {
         return new Tile(value + 1, type);
     }
 
-    public Tile prev()throws ErrorTileException {
+    public Tile prev() throws ErrorTileException {
         return new Tile(value - 1, type);
     }
 
@@ -118,4 +122,18 @@ public class Tile implements Comparable<Tile> {
         return canEat() && (value == 1 || value == 9);
     }
 
+
+    public static void each(Consumer<Tile> consumer) {
+        allTiles().forEach(consumer);
+    }
+
+    public static List<Tile> allTiles() {
+        return Arrays.stream(Type.values()).flatMap(type -> IntStream.rangeClosed(1, type.getMaxValue()).mapToObj(val -> {
+            try {
+                return type.tile(val);
+            } catch (ErrorTileException e) {
+                throw new RuntimeException(e);
+            }
+        })).collect(Collectors.toList());
+    }
 }

@@ -87,4 +87,14 @@ public class EfficiencyKey implements Comparable<EfficiencyKey> {
         }
         return cmp * -1;
     }
+
+    @Override
+    public String toString() {
+        return "EfficiencyKey{" +
+                "groups=" + groups +
+                ", leaders=" + leaders +
+                ", pairs=" + pairs +
+                ", leaderPairs=" + leaderPairs +
+                '}';
+    }
 }

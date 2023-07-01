@@ -26,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -153,5 +154,13 @@ public class EfficiencyEntry implements Comparable<EfficiencyEntry> {
 
     public EfficiencyKey getKey() {
         return key;
+    }
+
+    public void addTile(Tile tile) {
+        tiles.compute(tile, (key, integer) -> (integer == null ? 0 : integer) + 1);
+    }
+
+    public Map<Tile, Integer> getTiles() {
+        return tiles;
     }
 }
